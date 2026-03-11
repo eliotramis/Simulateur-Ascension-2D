@@ -8,13 +8,14 @@ from scipy.integrate import solve_ivp
 # ------------------------
 
 R_T = 6_378_000                # Rayon Terrestre (m)
-G_0 = 9.81                     # "Gravité" au niveau de la mer (m/s^2)
+G_0 = 9.80665                  # "Gravité" au niveau de la mer (m/s^2)
 P_0 = 101_325.0                # Pression au niveau de la mer (m/s^2)
 T_0 = 288.15                   # Température au niveau de la mer (m/s^2)
 L = 0.0065                     # Gradient de température troposphère (°C/m)
+R_S_air = 287.058              # Constante spécifique de l'air sec (J/(kg.K))
 
+# - Modèle Ariane 5 -
 
-# Modèle Ariane 5
 M_0 = 780_000                  # masse décollage (kg)
 
 D_EPC = 5.4                    # Diamètre de l'étage principal cryogénique (m)
@@ -40,14 +41,19 @@ def gravite(y: float):
 
 def atmosphere(y: float):
 
+    if y <= 0:
+        return P_0
+
     if y > 100_000.0:
         return 0.0
 
-    if y < 11_000.0:
-        # Troposphère, modèle de T linéaire
-        T = T_0 - L*y
-        P =
+    if y <= 11_000.0:
+        # Troposphère, modèle de T linéaire, g supposé constant (à expliquer rapport)
+        T = T_0 - L * y
+        P = P_0 * (T / T_0)**( G_0/(R_S_air * L) )
+        rho = P / (R_S_air * T)
 
+    return rho
 
 
 # --------------------------------
@@ -68,5 +74,7 @@ def dynamique_fusee(t, state):
     rho = atmosphere(y)
 
 
+
+
 if __name__ == "__main__":
-    print(np.version)
+    print(atmosphere(11_000))
