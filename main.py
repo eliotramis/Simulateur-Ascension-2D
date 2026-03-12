@@ -9,10 +9,16 @@ from scipy.integrate import solve_ivp
 
 R_T = 6_378_000                # Rayon Terrestre (m)
 G_0 = 9.80665                  # "Gravité" au niveau de la mer (m/s^2)
-P_0 = 101_325.0                # Pression au niveau de la mer (m/s^2)
-T_0 = 288.15                   # Température au niveau de la mer (m/s^2)
-L = 0.0065                     # Gradient de température troposphère (°C/m)
 R_S_air = 287.058              # Constante spécifique de l'air sec (J/(kg.K))
+
+H_BASES = np.array([0.0, 11000.0, 20000.0, 32000.0, 47000.0, 51000.0, 71000.0, 86000.0]) # Altitudes de chaque couche (m)
+L_GRAD = np.array([-0.0065, 0.0, 0.001, 0.0028, 0.0, -0.0028, -0.002]) # Gradients thermiques de chaque couche (K/m)
+
+T_BASES = np.zeros(7)
+P_BASES = np.zeros(7)
+
+T_BASES[0] = 288.15            # Température au niveau de la mer (m/s^2)
+P_BASES[0] = 101_325.0         # Pression au niveau de la mer (m/s^2)
 
 # - Modèle Ariane 5 -
 
@@ -47,11 +53,6 @@ def atmosphere(y: float):
     if y > 100_000.0:
         return 0.0
 
-    if y <= 11_000.0:
-        # Troposphère, modèle de T linéaire, g supposé constant (à expliquer rapport)
-        T = T_0 - L * y
-        P = P_0 * (T / T_0)**( G_0/(R_S_air * L) )
-        rho = P / (R_S_air * T)
 
     return rho
 
