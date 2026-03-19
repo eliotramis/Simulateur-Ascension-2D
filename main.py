@@ -61,7 +61,7 @@ ISP = 284.0                    # Impulsion spécifique moyenne calculée en prem
 # - Paramètres solveur -
 
 t_0 = 0.0                      # Temps initial pour solveur (s)
-t_f = 300.0                    # Temps final pour solveur (s)
+t_f = 13000.0                    # Temps final pour solveur (s)
 pas = 0.1                      # Pas (s)
 nb_pas = int((t_f-t_0)/pas)    # Nombre de pas pour solveur
 
@@ -70,17 +70,22 @@ nb_pas = int((t_f-t_0)/pas)    # Nombre de pas pour solveur
 # ------------------
 
 def gravite(y: float):
+
+    if y < 0.0:
+        return 0.0
     return G_0*((R_T/(R_T+y))**2)
 
 
 def atmosphere(y):
     """
     Modèle ISA complet (7 couches).
-    Convertit l'altitude géométrique y en altitude géopotentielle H,
-    puis interpole la densité locale.
+    Convertit l'altitude géométrique y en altitude géopotentielle H
     """
+
     # Au-delà de 86 km, on considère une densité de l'air nulle
     if y >= 86000.0:
+        return 0.0
+    if y < 0.0:
         return 0.0
 
     # Conversion géopotentielle
@@ -158,7 +163,7 @@ def dynamique_fusee(t, state):
         m = M_vide
 
     # Drag
-    D = (1/2)*rho*(vy**2)*CD*S
+    D = 0.5 * rho * (vy * abs(vy)) * CD * S
 
     # - PFD
 
@@ -177,6 +182,13 @@ def dynamique_fusee(t, state):
 
 if __name__ == "__main__":
 
+    def impact_sol(t, state):
+        # index 1 du state correspond à l'altitude y
+        return state[1]
+
+    impact_sol.terminal = True  # OUI : coupe le solveur quand y = 0
+    impact_sol.direction = -1  # OUI : ne s'active que si y passe par 0 en descendant
+
     # initialisation états initiaux
     state0 = [0.0, 0.0, 0.0, 0.0, M_0]
     # durée pour solveur
@@ -189,6 +201,7 @@ if __name__ == "__main__":
         t_span=t_ecart,
         y0=state0,
         t_eval=t_mesures,
+        events=impact_sol,
         method='RK45'
     )
 
@@ -200,12 +213,15 @@ if __name__ == "__main__":
 
     pressions_dyn = 0.5*densites*(vitesses_y**2)
 
-    index_max_Q = np.argmax(pressions_dyn)
+    indices_montee = np.where(temps < 130.0)[0]
 
-    valeur_max_Q = pressions_dyn[index_max_Q]
-    altitude_max_Q = altitudes[index_max_Q]
-    temps_max_Q = temps[index_max_Q]
-    vitesse_max_Q = vitesses_y[index_max_Q]
+    # On cherche le max-Q que dans cet intervalle
+    index_max_Q_montee = indices_montee[np.argmax(pressions_dyn[indices_montee])]
+
+    valeur_max_Q = pressions_dyn[index_max_Q_montee]
+    altitude_max_Q = altitudes[index_max_Q_montee]
+    temps_max_Q = temps[index_max_Q_montee]
+    vitesse_max_Q = vitesses_y[index_max_Q_montee]
 
     print("=== RAPPORT DE VOL ===")
     print(f"Apogée atteint : {np.max(altitudes) / 1000:.2f} km")
@@ -241,9 +257,8 @@ if __name__ == "__main__":
     plt.plot(temps_max_Q, valeur_max_Q, 'ko')
     plt.annotate(f'Max-Q: {valeur_max_Q:.0f} Pa\n@ {altitude_max_Q / 1000:.1f} km',
                  xy=(temps_max_Q, valeur_max_Q),
-                 xytext=(temps_max_Q + 10, valeur_max_Q * 0.7),
-                 arrowprops=dict(facecolor='black', shrink=0.05, width=1.5, headwidth=6))
-
+                 xytext=(temps_max_Q + 10, valeur_max_Q * 0.8))
+    plt.ylim(0, valeur_max_Q * 1.2)
     plt.xlabel('Temps [s]')
     plt.ylabel('Pression $q$ [Pa]')
     plt.grid(True, linestyle=':')
