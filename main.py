@@ -61,7 +61,7 @@ ISP = 284.0                    # Impulsion spécifique moyenne calculée en prem
 # - Paramètres solveur -
 
 t_0 = 0.0                      # Temps initial pour solveur (s)
-t_f = 13000.0                    # Temps final pour solveur (s)
+t_f = 13000.0                  # Temps final pour solveur (s)
 pas = 0.1                      # Pas (s)
 nb_pas = int((t_f-t_0)/pas)    # Nombre de pas pour solveur
 
@@ -73,10 +73,12 @@ def gravite(y: float):
 
     if y < 0.0:
         return 0.0
-    return G_0*((R_T/(R_T+y))**2)
+
+    return G_0*(( R_T / (R_T + y))**2)
 
 
 def atmosphere(y):
+
     """
     Modèle ISA complet (7 couches).
     Convertit l'altitude géométrique y en altitude géopotentielle H
@@ -135,30 +137,40 @@ def dynamique_fusee(t, state):
     if m < 0:
         return [0.0, 0.0, 0.0, 0.0, 0.0]
 
-    # - Modèles locaux.
+    # distance fusée au sol
+    d = math.sqrt((R_T + y) ** 2 + x ** 2) - R_T
+
+    # - MODELES LOCAUX
+
     # Norme du champ de gravité local
-    g = gravite(y)
+    g = gravite(d)
 
-    # densité de l'air à l'altitude y
-    rho = atmosphere(y)
+    # densité de l'air à l'altitude d
+    rho = atmosphere(d)
 
-    # - Calcul des forces
+    # angle d'incidence
+    theta = math.atan2(x,d)
+
+
+    # - CALCUL DES FORCES
+
     # Poids
     P = m*g
 
+    # Thrust
     # tant qu'il y'a de l'érgols, on continue
     if m > M_vide:
         # Thrust -> constant en première approximation
         T = F_T
         # Débit massique, négatif, masse diminue
-        dm_dt = -T / (ISP * G_0)
+        q = -T / (ISP * G_0)
 
     # sinon, on coupe les moteurs
     else:
         T = 0.0
-        dm_dt = 0.0
+        q = 0.0
 
-    # securité sur masse si pas trop grand
+    # securité sur masse si plus de carburant
     if m < M_vide:
         m = M_vide
 
@@ -166,15 +178,19 @@ def dynamique_fusee(t, state):
     D = 0.5 * rho * (vy * abs(vy)) * CD * S
 
     # - PFD
+    a = (T - P - D)/m
 
-    # selon x - nulle car tir vertical -> en première approximation
-    dvx_dt = 0.0
+    # on projette sur x et y
+    a_x = a * math.cos(theta)
+    a_y = a * math.sin(theta)
 
-    # Selon y
-    dvy_dt = (T - P - D)/m
+    dvx_dt = a_x
+    dvy_dt = a_y
 
     dx_dt = vx
     dy_dt = vy
+
+    dm_dt = q
 
     return [dx_dt, dy_dt, dvx_dt, dvy_dt, dm_dt]
 
@@ -206,6 +222,7 @@ if __name__ == "__main__":
     )
 
     temps = solution.t
+    positions = solution.y[0]
     altitudes = solution.y[1]
     vitesses_y = solution.y[3]
 
@@ -230,10 +247,10 @@ if __name__ == "__main__":
     print(f" - Altitude = {altitude_max_Q / 1000:.2f} km")
     print(f" - Vitesse = {vitesse_max_Q:.2f} m/s")
 
-    plt.figure(figsize=(10, 8))
+    plt.figure(figsize=(12, 10))
 
     # Graphe 1 : Profil d'altitude
-    plt.subplot(3, 1, 1)
+    plt.subplot(4, 1, 1)
     plt.plot(temps, altitudes / 1000.0, 'b-', linewidth=2, label='Altitude (km)')
     plt.axvline(x=temps_max_Q, color='r', linestyle='--', alpha=0.5)
     plt.ylabel('Altitude [km]')
@@ -242,7 +259,7 @@ if __name__ == "__main__":
     plt.title('Relevé de Vol (Modèle Vertical 1D)')
 
     # Graphe 2 : Profil de vitesse
-    plt.subplot(3, 1, 2)
+    plt.subplot(4, 1, 2)
     plt.plot(temps, vitesses_y, 'g-', linewidth=2, label='Vitesse (m/s)')
     plt.axvline(x=temps_max_Q, color='r', linestyle='--', alpha=1)
     plt.ylabel('Vitesse [m/s]')
@@ -250,7 +267,7 @@ if __name__ == "__main__":
     plt.legend()
 
     # Graphe 3 : Pression Dynamique (Le point critique)
-    plt.subplot(3, 1, 3)
+    plt.subplot(4, 1, 3)
     plt.plot(temps, pressions_dyn, 'r-', linewidth=2, label='Pression Dynamique $q$ (Pa)')
 
     # Marqueur visuel pour le Max-Q
@@ -258,13 +275,20 @@ if __name__ == "__main__":
     plt.annotate(f'Max-Q: {valeur_max_Q:.0f} Pa\n@ {altitude_max_Q / 1000:.1f} km',
                  xy=(temps_max_Q, valeur_max_Q),
                  xytext=(temps_max_Q + 10, valeur_max_Q * 0.8))
-    plt.ylim(0, valeur_max_Q * 1.2)
+    #plt.ylim(0, valeur_max_Q * 1.2)
     plt.xlabel('Temps [s]')
     plt.ylabel('Pression $q$ [Pa]')
     plt.grid(True, linestyle=':')
     plt.legend()
 
-    plt.tight_layout()
+    plt.subplot(4, 1, 4)
+    plt.plot(temps, positions / 1000.0, 'b-', linewidth=2, label='Position (km)')
+    plt.axvline(x=temps_max_Q, color='r', linestyle='--', alpha=0.5)
+    plt.ylabel('Position [km]')
+    plt.grid(True, linestyle=':')
+    plt.legend()
+
+    #plt.tight_layout()
     plt.show()
 
 
