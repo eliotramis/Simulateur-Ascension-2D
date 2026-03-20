@@ -10,9 +10,13 @@ from scipy.stats import alpha
 
 # - Paramètres physiques -
 
-R_T = 6_378_000                # Rayon Terrestre (m)
+R_T = 6_378_000.0              # Rayon Terrestre (m)
 G_0 = 9.80665                  # "Gravité" au niveau de la mer (m/s^2)
 R_S_air = 287.058              # Constante spécifique de l'air sec (J/(kg.K))
+GAMMA_air = 1.4
+
+MACH_DATA = np.array([0.0,  0.8,  0.9,  1.0,  1.1,  1.2,  1.5,  2.0,  3.0,  5.0,  10.0, 25.0])
+CD_DATA   = np.array([0.45, 0.45, 0.55, 0.75, 0.85, 0.80, 0.65, 0.50, 0.35, 0.25, 0.15, 0.10])
 
 H_BASES = np.array([0.0, 11000.0, 20000.0, 32000.0, 47000.0, 51000.0, 71000.0, 86000.0]) # Altitudes de chaque couche (m)
 L_GRAD = np.array([-0.0065, 0.0, 0.001, 0.0028, 0.0, -0.0028, -0.002]) # Gradients thermiques de chaque couche (K/m)
@@ -60,7 +64,7 @@ ISP = 284.0                    # Impulsion spécifique moyenne calculée en prem
 # - Paramètres solveur -
 
 t_0 = 0.0                      # Temps initial pour solveur (s)
-t_f = 13000.0                  # Temps final pour solveur (s)
+t_f = 10000.0                  # Temps final pour solveur (s)
 pas = 0.1                      # Pas (s)
 nb_pas = int((t_f-t_0)/pas)    # Nombre de pas pour solveur
 
@@ -85,9 +89,9 @@ def atmosphere(y):
 
     # Au-delà de 86 km, on considère une densité de l'air nulle
     if y >= 86000.0:
-        return 0.0
+        return 0.0, 186.87
     if y < 0.0:
-        return 0.0
+        return 0.0, 288.15
 
     # Conversion géopotentielle
     H = (R_T * y) / (R_T + y)
@@ -120,7 +124,25 @@ def atmosphere(y):
     # Gaz parfaits
     rho = P / (R_S_air * T)
 
-    return rho
+    return rho, T
+
+def vitesse_air(T):
+    if T <= 0:
+        return 0.0
+    return np.sqrt(GAMMA_air * R_S_air * T)
+
+def nombre_de_mach(T, v):
+    if v <= 0.0:
+        return 0.0
+    return v / vitesse_air(T)
+
+def calculer_cd(T, v):
+
+    mach_actuel = nombre_de_mach(T, v)
+
+    cd_actuel = np.interp(mach_actuel, MACH_DATA, CD_DATA)
+
+    return cd_actuel
 
 # --------------------------------
 # 3 - Calcul de mon vecteur d'état
@@ -141,12 +163,12 @@ def dynamique_fusee(t, state):
         # Thrust -> constant en première approximation
         F_T_norme = T_vide
         # Débit massique, négatif, masse diminue
-        q = - F_T_norme / (ISP * G_0)
+        dm_dt = - F_T_norme / (ISP * G_0)
 
     # sinon, on coupe les moteurs
     else:
         F_T_norme = 0.0
-        q = 0.0
+        dm_dt = 0.0
 
     # securité sur masse si plus de carburant
     if m < M_vide:
@@ -160,7 +182,7 @@ def dynamique_fusee(t, state):
     v_norme = np.linalg.norm(v_vect)
 
     g_locale = gravite(altitude_locale)
-    rho_locale = atmosphere(altitude_locale)
+    rho_locale, T_locale = atmosphere(altitude_locale)
 
     # POIDS
     poids_direction = -r_vect/r_norme
@@ -170,8 +192,10 @@ def dynamique_fusee(t, state):
     # DRAG
     D_vect = np.array([0.0, 0.0])
 
-    if v_norme > 1.0 and altitude_locale < 86.000:
-        D_norme = 0.5 * rho_locale * (vy ** 2) * C_D * S
+    C_D = calculer_cd(T_locale, v_norme)
+
+    if v_norme > 1.0 and altitude_locale < 86_000.0:
+        D_norme = 0.5 * rho_locale * (v_norme ** 2) * C_D * S
         D_vect = D_norme * (- v_vect / v_norme)
 
 
@@ -189,8 +213,7 @@ def dynamique_fusee(t, state):
 
     accel = PFD_vect/m
 
-    print(vy)
-    return [vx, vy, accel[0], accel[1], q]
+    return [vx, vy, accel[0], accel[1], dm_dt]
 
 
 
@@ -223,11 +246,11 @@ if __name__ == "__main__":
     temps = solution.t
     positions = solution.y[0]
     altitudes = solution.y[1]
-    vitesses_y = solution.y[3]
+    vitesses = np.sqrt(solution.y[2] ** 2 + solution.y[3] ** 2)
 
-    densites = np.array([atmosphere(y) for y in altitudes])
+    densites = np.array([atmosphere(y)[0] for y in altitudes])
 
-    pressions_dyn = 0.5*densites*(vitesses_y**2)
+    pressions_dyn = 0.5*densites*(vitesses**2)
 
     indices_montee = np.where(temps < 130.0)[0]
 
@@ -237,7 +260,7 @@ if __name__ == "__main__":
     valeur_max_Q = pressions_dyn[index_max_Q_montee]
     altitude_max_Q = altitudes[index_max_Q_montee]
     temps_max_Q = temps[index_max_Q_montee]
-    vitesse_max_Q = vitesses_y[index_max_Q_montee]
+    vitesse_max_Q = vitesses[index_max_Q_montee]
 
     print("=== RAPPORT DE VOL ===")
     print(f"Apogée atteint : {np.max(altitudes) / 1000:.2f} km")
@@ -259,7 +282,7 @@ if __name__ == "__main__":
 
     # Graphe 2 : Profil de vitesse
     plt.subplot(4, 1, 2)
-    plt.plot(temps, vitesses_y, 'g-', linewidth=2, label='Vitesse (m/s)')
+    plt.plot(temps, vitesses, 'g-', linewidth=2, label='Vitesse (m/s)')
     plt.axvline(x=temps_max_Q, color='r', linestyle='--', alpha=1)
     plt.ylabel('Vitesse [m/s]')
     plt.grid(True, linestyle=':')
