@@ -50,10 +50,9 @@ D_EAP = 3.05                   # Diamètre des 2 étages d'accél à poudre (m)
 S_EAP = math.pi*(D_EAP**2)/4   # Surface de référence EAP (m^2)
 S = S_EPC + 2*S_EAP            # Surface de référence Ariane5 (m^2)
 
-CD = 0.5                       # Coeff de traînée en première approximation en vol subsonique, TODO : implémenter en fonction du Mach
+C_D = 0.5                       # Coeff de traînée en première approximation en vol subsonique, TODO : implémenter en fonction du Mach
 
 T_vide = 15_490_000            # Thrust (poussée) cumulée dans le vide des deux EAP et du EPC (N)
-F_T = T_vide                   # Force de thrust en première approximation égale à T_vide (N), TODO : implémenter en fonction de l'altitude (pression)
 
 ISP = 284.0                    # Impulsion spécifique moyenne calculée en première approximation (s) TODO : implémenter en fonction EAP ou EPC et altitude (pression)
 
@@ -132,67 +131,66 @@ def dynamique_fusee(t, state):
     x, y, vx, vy, m = state
 
     # Conditions d'arrêt si fusée dans le sol ou masse négative
-    if y < 0 and vy < 0:
+    if y <= 0 and vy < 0:
         return [0.0, 0.0, 0.0, 0.0, 0.0]
     if m < 0:
         return [0.0, 0.0, 0.0, 0.0, 0.0]
 
-    # distance fusée au sol
-    d = math.sqrt((R_T + y) ** 2 + x ** 2) - R_T
-
-    # - MODELES LOCAUX
-
-    # Norme du champ de gravité local
-    g = gravite(d)
-
-    # densité de l'air à l'altitude d
-    rho = atmosphere(d)
-
-    # angle d'incidence
-    theta = math.atan2(x,d)
-
-
-    # - CALCUL DES FORCES
-
-    # Poids
-    P = m*g
-
-    # Thrust
     # tant qu'il y'a de l'érgols, on continue
     if m > M_vide:
         # Thrust -> constant en première approximation
-        T = F_T
+        F_T_norme = T_vide
         # Débit massique, négatif, masse diminue
-        q = -T / (ISP * G_0)
+        q = - F_T_norme / (ISP * G_0)
 
     # sinon, on coupe les moteurs
     else:
-        T = 0.0
+        F_T_norme = 0.0
         q = 0.0
 
     # securité sur masse si plus de carburant
     if m < M_vide:
         m = M_vide
 
-    # Drag
-    D = 0.5 * rho * (vy * abs(vy)) * CD * S
+    r_vect = np.array([x, R_T + y])
+    r_norme = np.linalg.norm(r_vect)
+    altitude_locale = r_norme - R_T
 
-    # - PFD
-    a = (T - P - D)/m
+    v_vect = np.array([vx, vy])
+    v_norme = np.linalg.norm(v_vect)
 
-    # on projette sur x et y
-    a_x = a * math.cos(theta)
-    a_y = a * math.sin(theta)
+    g_locale = gravite(altitude_locale)
+    rho_locale = atmosphere(altitude_locale)
 
-    dvx_dt = a_x
-    dvy_dt = a_y
+    # POIDS
+    poids_direction = -r_vect/r_norme
+    P_vect = m * g_locale * poids_direction
 
-    dx_dt = vx
-    dy_dt = vy
 
-    dm_dt = q
+    # DRAG
+    D_vect = np.array([0.0, 0.0])
 
-    return [dx_dt, dy_dt, dvx_dt, dvy_dt, dm_dt]
+    if v_norme > 1.0 and altitude_locale < 86.000:
+        D_norme = 0.5 * rho_locale * (vy ** 2) * C_D * S
+        D_vect = D_norme * (- v_vect / v_norme)
+
+
+    # THRUST
+    T_vect = np.array([0.0, 0.0])
+    if F_T_norme > 0.0:
+        if v_norme < 50.0:
+            T_vect = np.array([0.0, F_T_norme])
+
+        else:
+            angle_pitch_rad = np.radians(80.0)
+            T_vect = np.array([F_T_norme * math.cos(angle_pitch_rad), F_T_norme * math.sin(angle_pitch_rad)])
+
+    PFD_vect = P_vect + T_vect + D_vect
+
+    accel = PFD_vect/m
+
+    print(vy)
+    return [vx, vy, accel[0], accel[1], q]
 
 
 
@@ -219,6 +217,7 @@ if __name__ == "__main__":
         t_eval=t_mesures,
         events=impact_sol,
         method='RK45'
+
     )
 
     temps = solution.t
@@ -275,8 +274,7 @@ if __name__ == "__main__":
     plt.annotate(f'Max-Q: {valeur_max_Q:.0f} Pa\n@ {altitude_max_Q / 1000:.1f} km',
                  xy=(temps_max_Q, valeur_max_Q),
                  xytext=(temps_max_Q + 10, valeur_max_Q * 0.8))
-    #plt.ylim(0, valeur_max_Q * 1.2)
-    plt.xlabel('Temps [s]')
+    plt.ylim(0, valeur_max_Q * 1.2)
     plt.ylabel('Pression $q$ [Pa]')
     plt.grid(True, linestyle=':')
     plt.legend()
@@ -284,6 +282,7 @@ if __name__ == "__main__":
     plt.subplot(4, 1, 4)
     plt.plot(temps, positions / 1000.0, 'b-', linewidth=2, label='Position (km)')
     plt.axvline(x=temps_max_Q, color='r', linestyle='--', alpha=0.5)
+    plt.xlabel('Temps [s]')
     plt.ylabel('Position [km]')
     plt.grid(True, linestyle=':')
     plt.legend()
