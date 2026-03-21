@@ -54,8 +54,6 @@ D_EAP = 3.05                   # Diamètre des 2 étages d'accél à poudre (m)
 S_EAP = math.pi*(D_EAP**2)/4   # Surface de référence EAP (m^2)
 S = S_EPC + 2*S_EAP            # Surface de référence Ariane5 (m^2)
 
-C_D = 0.5                       # Coeff de traînée en première approximation en vol subsonique, TODO : implémenter en fonction du Mach
-
 T_vide = 15_490_000            # Thrust (poussée) cumulée dans le vide des deux EAP et du EPC (N)
 
 ISP = 284.0                    # Impulsion spécifique moyenne calculée en première approximation (s) TODO : implémenter en fonction EAP ou EPC et altitude (pression)
@@ -288,7 +286,7 @@ if __name__ == "__main__":
     plt.grid(True, linestyle=':')
     plt.legend()
 
-    # Graphe 3 : Pression Dynamique (Le point critique)
+    # Graphe 3 : Pression Dynamique
     plt.subplot(4, 1, 3)
     plt.plot(temps, pressions_dyn, 'r-', linewidth=2, label='Pression Dynamique $q$ (Pa)')
 
