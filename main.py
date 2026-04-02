@@ -66,6 +66,8 @@ t_f = 10000.0                  # Temps final pour solveur (s)
 pas = 0.1                      # Pas (s)
 nb_pas = int((t_f-t_0)/pas)    # Nombre de pas pour solveur
 
+angle_pitch_rad = np.radians(90)
+
 # ------------------
 # 2 - CALCUL MODELES
 # ------------------
@@ -204,8 +206,10 @@ def dynamique_fusee(t, state):
             T_vect = np.array([0.0, F_T_norme])
 
         else:
-            angle_pitch_rad = np.radians(80.0)
+            angle_pitch_rad = np.radians(90 - t/50)
             T_vect = np.array([F_T_norme * math.cos(angle_pitch_rad), F_T_norme * math.sin(angle_pitch_rad)])
+            print(T_vect)
+            print(angle_pitch_rad)
 
     PFD_vect = P_vect + T_vect + D_vect
 
@@ -244,6 +248,9 @@ if __name__ == "__main__":
     temps = solution.t
     positions = solution.y[0]
     altitudes = solution.y[1]
+    vitesse_x = solution.y[2]
+    vitesse_y = solution.y[3]
+
     vitesses = np.sqrt(solution.y[2] ** 2 + solution.y[3] ** 2)
 
     densites = np.array([atmosphere(y)[0] for y in altitudes])
@@ -301,15 +308,14 @@ if __name__ == "__main__":
     plt.legend()
 
     plt.subplot(4, 1, 4)
-    plt.plot(temps, positions / 1000.0, 'b-', linewidth=2, label='Position (km)')
+    plt.plot(positions / 1000.0, altitudes / 1000.0, 'b-', linewidth=2, label='Position (km)')
     plt.axvline(x=temps_max_Q, color='r', linestyle='--', alpha=0.5)
-    plt.xlabel('Temps [s]')
-    plt.ylabel('Position [km]')
+    plt.xlabel('Position [km]')
+    plt.ylabel('Altitude [km]')
     plt.grid(True, linestyle=':')
     plt.legend()
 
     #plt.tight_layout()
     plt.show()
-
 
 
