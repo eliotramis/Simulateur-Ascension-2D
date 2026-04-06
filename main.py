@@ -72,12 +72,15 @@ angle_pitch_rad = np.radians(90)
 # 2 - CALCUL MODELES
 # ------------------
 
-def gravite(y: float):
+def distance_radiale(x,y):
+    return np.sqrt(x**2 + (y+R_T)**2)
 
-    if y < 0.0:
+def gravite_norme(r: float):
+
+    if r < 0.0:
         return 0.0
 
-    return G_0*(( R_T / (R_T + y))**2)
+    return G_0*(( R_T / r )**2)
 
 
 def atmosphere(y):
@@ -181,12 +184,13 @@ def dynamique_fusee(t, state):
     v_vect = np.array([vx, vy])
     v_norme = np.linalg.norm(v_vect)
 
-    g_locale = gravite(altitude_locale)
+    r = distance_radiale(x, y)
+    g_r = gravite_norme(r)
     rho_locale, T_locale = atmosphere(altitude_locale)
 
     # POIDS
-    poids_direction = -r_vect/r_norme
-    P_vect = m * g_locale * poids_direction
+
+    P_vect = np.array([m*(-g_r*x/r), m*(-g_r*(y+R_T)/r)])
 
 
     # DRAG
@@ -202,14 +206,19 @@ def dynamique_fusee(t, state):
     # THRUST
     T_vect = np.array([0.0, 0.0])
     if F_T_norme > 0.0:
-        if v_norme < 50.0:
-            T_vect = np.array([0.0, F_T_norme])
-
+        if altitude_locale < 2000.0:
+            # Phase 1 : tir vertical
+            theta = math.pi / 2
+        elif altitude_locale < 6000.0:
+            # Phase 2 : pitch kick (impulsion 1.5 degré)
+            theta = math.radians(80)
         else:
-            angle_pitch_rad = np.radians(90 - t/50)
-            T_vect = np.array([F_T_norme * math.cos(angle_pitch_rad), F_T_norme * math.sin(angle_pitch_rad)])
-            print(T_vect)
-            print(angle_pitch_rad)
+            # Phase 3 : gravity turn
+            theta = math.atan2(vy, vx)
+            print(theta)
+
+        T_vect = np.array([F_T_norme * math.cos(theta), F_T_norme * math.sin(theta)])
+
 
     PFD_vect = P_vect + T_vect + D_vect
 
