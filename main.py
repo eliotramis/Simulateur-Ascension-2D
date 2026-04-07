@@ -236,14 +236,14 @@ def dynamique_fusee(t, state):
         if t < 15.0:
             theta_deg = 90.0
         elif t <= 135.0:
-            # phase EAP : 90° à 30°
+            # phase EAP + EPC : 90° à 30°
             theta_deg = np.interp(t, [15.0, 135.0], [90.0, 50.0])
         elif t <= 540.0:
             # phase EPC : 30° à 0°
-            theta_deg = np.interp(t, [135.0, 540.0], [50.0, 12.0])
+            theta_deg = np.interp(t, [135.0, 540.0], [50.0, 35.0])
         else:
             # phase ESC : horizontale
-            theta_deg = np.interp(t, [540.0, 1400.0], [12.0, 0.0])
+            theta_deg = np.interp(t, [540.0, 1400.0], [35.0, 0.0])
 
         # conversion repère sphérique
         angle_radial = math.atan2(y + R_T, x)
@@ -436,7 +436,7 @@ if __name__ == "__main__":
 
     # dézoom (Fenêtre de 16 000 km par 16 000 km)
     plt.xlim(-4000, 4000)
-    plt.ylim(-15000, 1000)  # L'origine Y=0 est en haut du globe, donc on descend jusqu'à -15000
+    plt.ylim(-15000, 2000)  # L'origine Y=0 est en haut du globe, donc on descend jusqu'à -15000
 
     plt.xlabel('X [km]')
     plt.ylabel('Y [km]')
