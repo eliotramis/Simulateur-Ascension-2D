@@ -240,10 +240,10 @@ def dynamique_fusee(t, state):
             theta_deg = np.interp(t, [15.0, 135.0], [90.0, 50.0])
         elif t <= 540.0:
             # phase EPC : 30° à 0°
-            theta_deg = np.interp(t, [135.0, 540.0], [50.0, 15.0])
+            theta_deg = np.interp(t, [135.0, 540.0], [50.0, 12.0])
         else:
             # phase ESC : horizontale
-            theta_deg = np.interp(t, [540.0, 1400.0], [15.0, 0.0])
+            theta_deg = np.interp(t, [540.0, 1400.0], [12.0, 0.0])
 
         # conversion repère sphérique
         angle_radial = math.atan2(y + R_T, x)
@@ -282,7 +282,7 @@ if __name__ == "__main__":
     impact_sol.terminal = True  # oui : coupe le solveur quand y = 0
     impact_sol.direction = -1  # oui : ne s'active que si y passe par 0 en descendant
 
-    t_f = 6500.0
+    t_f = 10000.0
     pas = 0.1
 
     # ===============================
@@ -415,7 +415,7 @@ if __name__ == "__main__":
 
     # Graphe 4 : altitude/position
 
-    plt.subplot(4, 1, 4)
+    plt.figure()
 
     # courbure de la Terre (un cercle complet)
     theta_terre = np.linspace(0, 2 * math.pi, 500)
