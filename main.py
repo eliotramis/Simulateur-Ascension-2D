@@ -417,25 +417,25 @@ if __name__ == "__main__":
 
     plt.subplot(4, 1, 4)
 
-    # Courbure de la Terre (un cercle complet)
+    # courbure de la Terre (un cercle complet)
     theta_terre = np.linspace(0, 2 * math.pi, 500)
     x_terre = R_T * np.cos(theta_terre)
     y_terre = R_T * np.sin(theta_terre) - R_T
     plt.plot(x_terre / 1000.0, y_terre / 1000.0, 'g-', linewidth=2, label='Terre (Rayon 6378 km)')
 
-    # L'atmosphère (fine couche bleue claire de 100 km d'épaisseur pour visualiser la zone de danger)
+    # atmosphère
     x_atm = (R_T + 100000.0) * np.cos(theta_terre)
     y_atm = (R_T + 100000.0) * np.sin(theta_terre) - R_T
     plt.plot(x_atm / 1000.0, y_atm / 1000.0, 'c--', linewidth=1, alpha=0.5, label='Atmosphère (100 km)')
 
-    # Ta trajectoire cartésienne
-    plt.plot(positions / 1000.0, y_coords / 1000.0, 'b-', linewidth=2, label='Trajectoire Fusée')
+    # trajectoire cartésienne
+    plt.plot(positions / 1000.0, y_coords / 1000.0, 'b-', linewidth=1, label='Trajectoire Fusée')
 
-    # Affichage isométrique strict
+    # affichage isométrique
     plt.axis('equal')
 
-    # Dézoom total (Fenêtre de 16 000 km par 16 000 km)
-    plt.xlim(-8000, 8000)
+    # dézoom (Fenêtre de 16 000 km par 16 000 km)
+    plt.xlim(-4000, 4000)
     plt.ylim(-15000, 1000)  # L'origine Y=0 est en haut du globe, donc on descend jusqu'à -15000
 
     plt.xlabel('X [km]')
