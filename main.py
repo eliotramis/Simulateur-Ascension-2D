@@ -282,7 +282,7 @@ if __name__ == "__main__":
     impact_sol.terminal = True  # oui : coupe le solveur quand y = 0
     impact_sol.direction = -1  # oui : ne s'active que si y passe par 0 en descendant
 
-    t_f = 10000.0
+    t_f = 20000.0
     pas = 0.1
 
     # ===============================
@@ -435,8 +435,8 @@ if __name__ == "__main__":
     plt.axis('equal')
 
     # dézoom (Fenêtre de 16 000 km par 16 000 km)
-    plt.xlim(-4000, 4000)
-    plt.ylim(-15000, 2000)  # L'origine Y=0 est en haut du globe, donc on descend jusqu'à -15000
+    plt.xlim(-8000, 8000)
+    plt.ylim(-18000, 10000)  # L'origine Y=0 est en haut du globe, donc on descend jusqu'à -15000
 
     plt.xlabel('X [km]')
     plt.ylabel('Y [km]')
