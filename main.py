@@ -386,14 +386,17 @@ if __name__ == "__main__":
     plt.subplot(4, 1, 1)
     plt.plot(temps, altitudes / 1000.0, 'b-', linewidth=2, label='Altitude (km)')
     plt.axvline(x=temps_max_Q, color='r', linestyle='--', alpha=0.5)
+    plt.xlim(0, 2500)
     plt.ylabel('Altitude [km]')
     plt.grid(True, linestyle=':')
     plt.legend()
     plt.title('Relevé de Vol (Modèle 2D, pitch angle non constant)')
+
     # Graphe 2 : Profil de vitesse
     plt.subplot(4, 1, 2)
     plt.plot(temps, vitesses, 'g-', linewidth=2, label='Vitesse (m/s)')
     plt.axvline(x=temps_max_Q, color='r', linestyle='--', alpha=1)
+    plt.xlim(0, 2500)
     plt.ylabel('Vitesse [m/s]')
     plt.grid(True, linestyle=':')
     plt.legend()
@@ -409,6 +412,7 @@ if __name__ == "__main__":
                  xy=(temps_max_Q, valeur_max_Q),
                  xytext=(temps_max_Q + 10, valeur_max_Q * 0.8))
     plt.ylim(0, valeur_max_Q * 1.2)
+    plt.xlim(0, 2500)
     plt.ylabel('Pression $q$ [Pa]')
     plt.grid(True, linestyle=':')
     plt.legend()
