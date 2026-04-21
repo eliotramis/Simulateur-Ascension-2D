@@ -39,7 +39,7 @@ Avec :
 Le code utilise le modèle International Standard Atmosphere pour calculer la densité $\rho$ et la pression $P$ jusqu'à 86 km. Il intègre la   conversion de l'altitude géométrique $z$ en altitude géopotentielle $H$ :
 
 $$
-H = \frac{R_T*z}{R_T+z}
+H = \frac{R_T \cdot z}{R_T+z}
 $$
 
   Avec $R_T$ le rayon terrestre.
@@ -84,5 +84,5 @@ Bien que le simulateur produise un profil de vol cohérent, l'analyse des résul
 
 - Le Max-Q est atteint à une altitude d'environ 7 km, alors que la télémétrie réelle d'Ariane 5 le situe proche des 13/14 km. Cette anomalie suggère une interpolation de la poussée des EAP trop agressive dans les basses couches de l'atmosphère, ou l'absence d'une loi de throttling explicite lors du passage en supersonique.
 
-- En prolongeant la durée de simulation au-delà de l'injection, on observe une diminution du périgée. Cela indique que la vitesse de satellisation n'est pas atteinte en fin de propulsion, ou que le solveur accumule les erreurs sur les temps longs.
+- On observe une dégradation de l'orbite sur le long terme, malgré une vitesse finale suffisante (8.3 km/s). Cela montre qu'à l'extinction du moteur, le lanceur n'est pas tout à fait parallèle à la surface terrestre (angle de pente de vol non nul). La consigne d'inclinaison sur la dernière phase de vol mérite donc d'être un peu mieux réglée. Ou alors le solveur accumule les erreurs sur les temps longs.
 
