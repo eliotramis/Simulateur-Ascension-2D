@@ -57,16 +57,17 @@ Le simulateur se décompose en 3 phases successives :
 <br>
 
 **Hypothèses physiques** :
+
 - Plan (x,y).
-- Pitch control au doigt mouillé et interpolation linéaire sur intervalles de temps.
-- Terre supposée parfaitement circulaire et immobile.
+- Loi de commande d'attitude (Pitch) définie de manière empirique par interpolation linéaire sur intervalles de temps.
+- Terre parfaitement sphérique, non tournante (absence des composantes de Coriolis et d'entraînement).
 
 <br>
 <br>
 
 **Résultats** :
 
-Voici les résultats obtenus après moult itérations sur le pitch control et le profil de poussée des EAP :
+Voici les résultats obtenus après plusieurs campagnes d'itérations sur le pitch control et le profil de poussée des EAP :
 
 <p align="center">
   <img width="642" height="485" alt="Capture d’écran 2026-04-21 à 21 17 01" src="https://github.com/user-attachments/assets/49960349-9f79-4da4-b973-4cff0680a0be" />
@@ -79,6 +80,9 @@ Voici les résultats obtenus après moult itérations sur le pitch control et le
 
 **Regard Critique** :
 
-Au vu des courbes obtenues, je suis globalement satisfait de ce petit projet. Le max-Q à seulement 7km d'altitude me dérange pas mal, j'ai lu qu'il devrait se situer aux alentours de 12km. Je suspecte un poussée des EAP trop importante dans les premières couches de l'atmosphère. Aussi, alors que le périgée de mon satellite se situe au delà des 86.000 km, mon satellite se rapproche peu à peu de la surface (intuition confirmée quand j'augmente drastiquement le temps de simulation). 
+Bien que le simulateur produise un profil de vol cohérent, l'analyse des résultats met en évidence deux biais de modélisation qui nécessiteront des itérations futures :
 
+- Le Max-Q est atteint à une altitude d'environ 7 km, alors que la télémétrie réelle d'Ariane 5 le situe proche des 13/14 km. Cette anomalie suggère une interpolation de la poussée des EAP trop agressive dans les basses couches de l'atmosphère, ou l'absence d'une loi de throttling explicite lors du passage en supersonique.
+
+- En prolongeant la durée de simulation au-delà de l'injection, on observe une diminution du périgée. Cela indique que la vitesse de satellisation n'est pas atteinte en fin de propulsion, ou que le solveur accumule les erreurs sur les temps longs.
 
