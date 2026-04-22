@@ -24,7 +24,7 @@ Ce projet implémente un simulateur de trajectoire d'ascension pour le lanceur A
 Le simulateur résout le principe fondamental de la dynamique dans le référentiel géocentrique supposé galiléen :
     
 $$
-m(t)\frac{dv}{dt} = T(P_{atm}) + D(h,v) + m(t)g(r)
+m(t)\frac{dv}{dt} = T(P_a) + D(h,v) + m(t)g(r)
 $$
     
 Avec :
@@ -36,7 +36,7 @@ Avec :
 
 2. Modèle Atmosphérique (ISA)
    
-Le code utilise le modèle International Standard Atmosphere pour calculer la densité $\rho$ et la pression $P$ jusqu'à 86 km. Il intègre la   conversion de l'altitude géométrique $z$ en altitude géopotentielle $H$ :
+Le code utilise le modèle International Standard Atmosphere pour calculer la densité de l'air $\rho$ et la pression $P$ jusqu'à 86 km. Il intègre la conversion de l'altitude géométrique $z$ en altitude géopotentielle $H$ :
 
 $$
 H = \frac{R_T \cdot z}{R_T+z}
